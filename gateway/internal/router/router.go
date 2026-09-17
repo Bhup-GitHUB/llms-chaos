@@ -39,12 +39,13 @@ type Snapshot struct {
 }
 
 type Pool struct {
-	mu      sync.RWMutex
-	workers map[string]*Worker
+	mu       sync.RWMutex
+	workers  map[string]*Worker
+	affinity map[string]string
 }
 
 func New() *Pool {
-	return &Pool{workers: map[string]*Worker{}}
+	return &Pool{workers: map[string]*Worker{}, affinity: map[string]string{}}
 }
 
 func (p *Pool) Update(snapshots []Snapshot) {
@@ -65,6 +66,15 @@ func (p *Pool) Update(snapshots []Snapshot) {
 	for id := range p.workers {
 		if !seen[id] {
 			delete(p.workers, id)
+		}
+	}
+	if p.affinity == nil {
+		p.affinity = map[string]string{}
+	}
+	for k, v := range p.affinity {
+		w, ok := p.workers[v]
+		if !ok || w.State != "ready" {
+			delete(p.affinity, k)
 		}
 	}
 }
@@ -91,6 +101,57 @@ func (p *Pool) Pick() *Worker {
 	}
 	a := candidates[rand.Intn(len(candidates))]
 	b := candidates[rand.Intn(len(candidates))]
+	if a.score() <= b.score() {
+		return a
+	}
+	return b
+}
+
+func (p *Pool) PickForKey(key string) *Worker {
+	if key == "" {
+		return p.Pick()
+	}
+	p.mu.RLock()
+	id, ok := p.affinity[key]
+	w, wok := p.workers[id]
+	p.mu.RUnlock()
+	if ok && wok && w.State == "ready" {
+		return w
+	}
+	chosen := p.Pick()
+	if chosen == nil {
+		return nil
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.affinity == nil {
+		p.affinity = map[string]string{}
+	}
+	if id2, ok2 := p.affinity[key]; ok2 {
+		if w2, wok2 := p.workers[id2]; wok2 && w2.State == "ready" {
+			return w2
+		}
+	}
+	p.affinity[key] = chosen.ID
+	return chosen
+}
+
+func (p *Pool) PickExcept(excludeID string) *Worker {
+	candidates := p.ready()
+	filtered := make([]*Worker, 0, len(candidates))
+	for _, w := range candidates {
+		if w.ID != excludeID {
+			filtered = append(filtered, w)
+		}
+	}
+	if len(filtered) == 0 {
+		return nil
+	}
+	if len(filtered) == 1 {
+		return filtered[0]
+	}
+	a := filtered[rand.Intn(len(filtered))]
+	b := filtered[rand.Intn(len(filtered))]
 	if a.score() <= b.score() {
 		return a
 	}

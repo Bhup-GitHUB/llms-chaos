@@ -8,6 +8,8 @@ import (
 
 	"github.com/bhupesh/llms-chaos/gateway/internal/breaker"
 	"github.com/bhupesh/llms-chaos/gateway/internal/config"
+	"github.com/bhupesh/llms-chaos/gateway/internal/hedge"
+	"github.com/bhupesh/llms-chaos/gateway/internal/limiter"
 	"github.com/bhupesh/llms-chaos/gateway/internal/middleware"
 	"github.com/bhupesh/llms-chaos/gateway/internal/proxy"
 	"github.com/bhupesh/llms-chaos/gateway/internal/router"
@@ -29,12 +31,20 @@ func main() {
 	pool := router.New()
 	breakers := breaker.NewRegistry(3, 5*time.Second)
 	metrics := middleware.NewMetrics()
+	hedgeBudget := hedge.NewBudget(time.Duration(cfg.HeaderTimeout) * time.Second)
+	maxInflight := cfg.MaxInflight
+	if maxInflight <= 0 {
+		maxInflight = 256
+	}
+	adaptive := limiter.New(32, 1, maxInflight)
 	fwd := &proxy.Forwarder{
 		Pool:          pool,
 		Breakers:      breakers,
 		Metrics:       metrics,
 		DialTimeout:   time.Duration(cfg.DialTimeout) * time.Second,
 		HeaderTimeout: time.Duration(cfg.HeaderTimeout) * time.Second,
+		Hedge:         hedgeBudget,
+		Limiter:       adaptive,
 	}
 
 	var version atomic.Int64
