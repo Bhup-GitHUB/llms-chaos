@@ -1,0 +1,1 @@
+{"name": "worker-crash", "hypothesis": "killing one worker keeps gateway ready with bounded TTFT", "gateway_url": "http://localhost:8000", "max_p99_ttft": 2.0, "max_error_rate": 0.01, "steps": [{"fault": "kill", "target": "worker-2", "wait_s": 15}]}
