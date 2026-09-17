@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: gateway
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+  - job_name: workers
+    static_configs:
+      - targets: ["host.docker.internal:9001", "host.docker.internal:9002", "host.docker.internal:9003"]
+  - job_name: chaos
+    static_configs:
+      - targets: ["host.docker.internal:8020"]
+  - job_name: toxiproxy
+    static_configs:
+      - targets: ["toxiproxy:8474"]
