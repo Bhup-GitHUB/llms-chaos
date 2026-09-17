@@ -1,0 +1,45 @@
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: llms-chaos
+  namespace: llms-chaos
+spec:
+  rayVersion: "2.40.0"
+  headGroupSpec:
+    rayStartParams:
+      dashboard-host: 0.0.0.0
+    template:
+      spec:
+        containers:
+          - name: ray-head
+            image: rayproject/ray:2.40.0
+            ports:
+              - containerPort: 8265
+              - containerPort: 8010
+  workerGroupSpecs:
+    - groupName: gpu-workers
+      replicas: 3
+      rayStartParams: {}
+      template:
+        spec:
+          containers:
+            - name: ray-worker
+              image: llms-chaos/worker-vllm:latest
+              resources:
+                limits:
+                  nvidia.com/gpu: 1
+---
+apiVersion: ray.io/v1
+kind: RayService
+metadata:
+  name: llms-serve
+  namespace: llms-chaos
+spec:
+  serveConfigV2: |
+    applications:
+      - name: llm
+        import_path: supervisor:app
+        route_prefix: /
+        deployments:
+          - name: InferenceWorker
+            num_replicas: 3
