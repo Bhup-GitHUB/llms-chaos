@@ -1,0 +1,30 @@
+services:
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    ports:
+      - "8474:8474"
+      - "9101:9101"
+      - "9102:9102"
+      - "9103:9103"
+    command: -host 0.0.0.0
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployments/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - ./deployments/grafana/provisioning:/etc/grafana/provisioning
+
+  loki:
+    image: grafana/loki:3.3.0
+    ports:
+      - "3100:3100"
