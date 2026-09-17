@@ -14,6 +14,10 @@ class Registry:
         with self._mu:
             self._counters[name + labels] = self._counters.get(name + labels, 0) + 1
 
+    def set(self, name: str, value: float) -> None:
+        with self._mu:
+            self._counters[name] = value
+
     def observe_ttft(self, seconds: float) -> None:
         with self._mu:
             self._ttft.append(seconds)
@@ -36,6 +40,11 @@ class Registry:
                 lines.append(f"worker_ttft_seconds_p50 {ordered[len(ordered)//2]}")
                 lines.append(f"worker_ttft_seconds_p99 {ordered[int(len(ordered)*0.99)]}")
             lines.append(f"worker_requests_inflight {self._counters.get('inflight', 0)}")
+            hits = self._counters.get("worker_cache_hits", 0)
+            misses = self._counters.get("worker_cache_misses", 0)
+            total = hits + misses
+            ratio = (hits / total) if total else 0.0
+            lines.append(f"worker_cache_hit_ratio {ratio}")
             return "\n".join(lines) + "\n"
 
 
