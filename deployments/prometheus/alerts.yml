@@ -1,0 +1,36 @@
+groups:
+  - name: llms-chaos-slo
+    interval: 15s
+    rules:
+      - alert: DeadWorker
+        expr: min_over_time(gateway_workers_ready[2m]) < 3
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Fewer than 3 workers ready
+          description: gateway_workers_ready below 3 for 2m. Check cluster_state_version and worker up status.
+      - alert: TTFTBurn
+        expr: gateway_ttft_seconds_p99 > 2 or avg(worker_queue_depth) > 50
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: TTFT p99 burn or worker queue saturation
+          description: gateway_ttft_seconds_p99 above 2s or average worker_queue_depth above 50 for 5m.
+      - alert: ErrorBudgetBurn
+        expr: sum(rate(gateway_failures_total[5m])) / sum(rate(gateway_requests_total[5m])) > 0.02 or avg(worker_cache_hit_ratio) < 0.2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Error budget burn or cache hit collapse
+          description: Failure ratio over gateway_requests_total above 2% or average worker_cache_hit_ratio below 0.2 for 5m.
+      - alert: ChaosStuck
+        expr: chaos_fault_active > 0 and changes(cluster_state_version[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chaos fault active without membership progress
+          description: chaos_fault_active stuck above 0 for 30m with no change in cluster_state_version.
