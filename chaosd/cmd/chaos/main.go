@@ -11,6 +11,8 @@ import (
 
 	"github.com/bhupesh/llms-chaos/chaosd/internal/experiment"
 	"github.com/bhupesh/llms-chaos/chaosd/internal/faults"
+	"github.com/bhupesh/llms-chaos/chaosd/internal/gameday"
+	"github.com/bhupesh/llms-chaos/chaosd/internal/reporter"
 	"github.com/bhupesh/llms-chaos/chaosd/internal/toxiproxy"
 )
 
@@ -78,6 +80,44 @@ func main() {
 		fmt.Println("experiment complete, faults rolled back")
 	case "serve":
 		serve(store)
+	case "gameday":
+		seed := time.Now().UnixNano()
+		rounds := 6
+		cooldown := 10
+		if len(os.Args) > 2 {
+			v, err := strconv.ParseInt(os.Args[2], 10, 64)
+			fatal(err)
+			seed = v
+		}
+		if len(os.Args) > 3 {
+			rounds = atoi(os.Args[3])
+		}
+		if len(os.Args) > 4 {
+			cooldown = atoi(os.Args[4])
+		}
+		cfg := gameday.Config{Seed: seed, Rounds: rounds, Cooldown: time.Duration(cooldown) * time.Second}
+		events, err := gameday.Run(store, cfg)
+		fatal(err)
+		for _, e := range events {
+			fmt.Println(e.Round, e.Kind, e.Worker)
+		}
+	case "report":
+		requireArg(4)
+		start, err := time.Parse(time.RFC3339, os.Args[2])
+		fatal(err)
+		end, err := time.Parse(time.RFC3339, os.Args[3])
+		fatal(err)
+		prom := "http://localhost:9090"
+		if len(os.Args) > 4 {
+			prom = os.Args[4]
+		}
+		out := "reports"
+		if len(os.Args) > 5 {
+			out = os.Args[5]
+		}
+		res, err := reporter.Generate(prom, start, end, out)
+		fatal(err)
+		fmt.Println(res.Path, res.MTTD.String(), res.MTTR.String(), res.P99TTFT)
 	default:
 		usage()
 		os.Exit(1)
@@ -148,5 +188,5 @@ func fatal(err error) {
 }
 
 func usage() {
-	fmt.Println("usage: chaos <init|kill|latency|partition|heal|memory|oom|slow-model|reset|schedule|serve> ...")
+	fmt.Println("usage: chaos <init|kill|latency|partition|heal|memory|oom|slow-model|reset|schedule|gameday|report|serve> ...")
 }
