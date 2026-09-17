@@ -7,13 +7,13 @@ import (
 )
 
 type Metrics struct {
-	requests      atomic.Uint64
-	failures      atomic.Uint64
-	retries       atomic.Uint64
-	rejected      atomic.Uint64
-	inflight      atomic.Int64
-	ttftMu        sync.Mutex
-	ttftSamples   []float64
+	requests    atomic.Uint64
+	failures    atomic.Uint64
+	retries     atomic.Uint64
+	rejected    atomic.Uint64
+	inflight    atomic.Int64
+	ttftMu      sync.Mutex
+	ttftSamples []float64
 }
 
 func NewMetrics() *Metrics {

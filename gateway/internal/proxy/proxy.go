@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -16,9 +15,9 @@ import (
 )
 
 type Forwarder struct {
-	Pool    *Pool
-	Breakers *breaker.Registry
-	Metrics *middleware.Metrics
+	Pool          Pool
+	Breakers      *breaker.Registry
+	Metrics       *middleware.Metrics
 	DialTimeout   time.Duration
 	HeaderTimeout time.Duration
 }

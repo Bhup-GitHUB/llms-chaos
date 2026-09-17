@@ -19,12 +19,12 @@ type Step struct {
 }
 
 type Definition struct {
-	Name            string `json:"name"`
-	Hypothesis      string `json:"hypothesis"`
-	GatewayURL      string `json:"gateway_url"`
-	MaxP99TTFT      float64 `json:"max_p99_ttft"`
-	MaxErrorRate    float64 `json:"max_error_rate"`
-	Steps           []Step `json:"steps"`
+	Name         string  `json:"name"`
+	Hypothesis   string  `json:"hypothesis"`
+	GatewayURL   string  `json:"gateway_url"`
+	MaxP99TTFT   float64 `json:"max_p99_ttft"`
+	MaxErrorRate float64 `json:"max_error_rate"`
+	Steps        []Step  `json:"steps"`
 }
 
 func Load(path string) (Definition, error) {

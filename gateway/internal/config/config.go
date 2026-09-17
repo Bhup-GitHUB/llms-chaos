@@ -3,11 +3,11 @@ package config
 import "os"
 
 type Config struct {
-	ListenAddr  string
-	RegistryURL string
-	DialTimeout int
+	ListenAddr    string
+	RegistryURL   string
+	DialTimeout   int
 	HeaderTimeout int
-	MaxInflight int
+	MaxInflight   int
 }
 
 func Load() Config {
